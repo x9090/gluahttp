@@ -2,6 +2,8 @@ package gluahttp
 
 import (
 	"context"
+	"crypto/rand"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"github.com/yuin/gopher-lua"
@@ -17,7 +19,13 @@ type httpModule struct {
 
 type empty struct{}
 
-func NewHttpModule(client *http.Client) *httpModule {
+// Global variables for the target passed by VulnScan engine
+var HostName string
+var PortNum int
+
+func NewHttpModule(client *http.Client, hostName string, portNum int) *httpModule {
+	HostName = hostName
+	PortNum = portNum
 	return NewHttpModuleWithDo(client.Do)
 }
 
@@ -138,6 +146,13 @@ func (h *httpModule) requestBatch(L *lua.LState) int {
 		return 1
 	}
 }
+func randomBoundary(n int) (string, error) {
+	bytes := make([]byte, n)
+	if _, err := rand.Read(bytes); err != nil {
+		return "", err
+	}
+	return hex.EncodeToString(bytes), nil
+}
 
 func (h *httpModule) doRequest(L *lua.LState, method string, url string, options *lua.LTable) (*lua.LUserData, error) {
 	req, err := http.NewRequest(strings.ToUpper(method), url, nil)
@@ -172,9 +187,46 @@ func (h *httpModule) doRequest(L *lua.LState, method string, url string, options
 			}
 		}
 
+		// Multipart encoding
+		if files, ok := options.RawGet(lua.LString("files")).(*lua.LTable); ok {
+			boundary, _ := randomBoundary(16)
+			startBoundary := "--" + boundary + "\r\n"
+			lastBoundary := "--" + boundary + "--\r\n"
+			var disposBody []string
+			files.ForEach(func(fileKey lua.LValue, fileValue lua.LValue) {
+				//fmt.Println(fileKey, fileValue)
+
+				if fileValue.Type() == lua.LTTable {
+					formData := ""
+					filenameData := ""
+					toTable(fileValue).ForEach(func(vk lua.LValue, dataVal lua.LValue) {
+						//fmt.Println(vk, dataVal)
+						switch vk.(lua.LNumber) {
+						case 1:
+							filenameData = fmt.Sprintf(" filename=\"%s\"", dataVal.String())
+						case 2:
+							if len(filenameData) > 0 {
+								formData = fmt.Sprintf("%s\r\n\r\n%s\r\n", filenameData, dataVal.String())
+							} else {
+								formData = fmt.Sprintf("\r\n\r\n%s\r\n", dataVal.String())
+							}
+
+						}
+					})
+					disposBody = append(disposBody, fmt.Sprintf("%sContent-Disposition: form-data; name=\"%s\";%s", startBoundary, fileKey.String(), formData))
+				} else if fileValue.Type() == lua.LTString {
+					disposBody = append(disposBody, fmt.Sprintf("%sContent-Disposition: form-data; name=\"%s\"; filename=\"%s\"\r\n\r\n%s\r\n", startBoundary, fileKey.String(), fileKey.String(), fileValue.String()))
+				}
+			})
+			// Setting last boundary
+			body = lua.LString(strings.Join(disposBody, "") + lastBoundary)
+			req.Header.Set("Content-Type", fmt.Sprintf("multipart/form-data; boundary=%s", boundary))
+		}
+
 		switch reqBody := body.(type) {
 		case lua.LString:
 			body := reqBody.String()
+			//fmt.Printf("body:\n%s", body)
 			req.ContentLength = int64(len(body))
 			req.Body = ioutil.NopCloser(strings.NewReader(body))
 		}
@@ -219,7 +271,35 @@ func (h *httpModule) doRequest(L *lua.LState, method string, url string, options
 	return newHttpResponse(res, &body, len(body), L), nil
 }
 
-func (h *httpModule) doRequestAndPush(L *lua.LState, method string, url string, options *lua.LTable) int {
+func buildTargetBaseURL(hostName string, portNum int) string {
+	url := hostName
+
+	if !strings.HasPrefix(url, "http://") && !strings.HasPrefix(url, "https://") {
+		switch portNum {
+		case 80:
+			url = fmt.Sprintf("http://%s", url)
+
+		case 443:
+			url = fmt.Sprintf("https://%s", url)
+
+		default:
+			fmt.Println("Unrecognized port, using default HTTPS with specified port number\n")
+			url = fmt.Sprintf("https://%s:%d", url, portNum)
+		}
+	} else if portNum != 80 && portNum != 443 {
+		url = fmt.Sprintf("%s:%d", hostName, portNum)
+	}
+	return url
+}
+
+//func (h *httpModule) doRequestAndPush(L *lua.LState, method string, url string, options *lua.LTable) int {
+func (h *httpModule) doRequestAndPush(L *lua.LState, method string, path string, options *lua.LTable) int {
+	baseURL := buildTargetBaseURL(HostName, PortNum)
+	if !strings.HasPrefix(path, "/") {
+		path = "/" + path
+	}
+	url := baseURL + path
+	//fmt.Printf("Making request using URL: %s\n", url)
 	response, err := h.doRequest(L, method, url, options)
 
 	if err != nil {
