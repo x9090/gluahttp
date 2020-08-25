@@ -42,23 +42,23 @@ func main() {
 
 ## API
 
-- [`http.delete(url [, options])`](#httpdeleteurl--options)
-- [`http.get(url [, options])`](#httpgeturl--options)
-- [`http.head(url [, options])`](#httpheadurl--options)
-- [`http.patch(url [, options])`](#httppatchurl--options)
-- [`http.post(url [, options])`](#httpposturl--options)
-- [`http.put(url [, options])`](#httpputurl--options)
-- [`http.request(method, url [, options])`](#httprequestmethod-url--options)
+- [`http.delete(path [, options])`](#httpdeleteurl--options)
+- [`http.get(path [, options])`](#httpgeturl--options)
+- [`http.head(path [, options])`](#httpheadurl--options)
+- [`http.patch(path [, options])`](#httppatchurl--options)
+- [`http.post(path [, options])`](#httpposturl--options)
+- [`http.put(path [, options])`](#httpputurl--options)
+- [`http.request(method, path [, options])`](#httprequestmethod-url--options)
 - [`http.request_batch(requests)`](#httprequest_batchrequests)
 - [`http.response`](#httpresponse)
 
-### http.delete(url [, options])
+### http.delete(path [, options])
 
 **Attributes**
 
 | Name    | Type   | Description |
 | ------- | ------ | ----------- |
-| url     | String | URL of the resource to load |
+| path    | String | Path of the URL to load |
 | options | Table  | Additional options |
 
 **Options**
@@ -74,13 +74,13 @@ func main() {
 
 [http.response](#httpresponse) or (nil, error message)
 
-### http.get(url [, options])
+### http.get(path [, options])
 
 **Attributes**
 
 | Name    | Type   | Description |
 | ------- | ------ | ----------- |
-| url     | String | URL of the resource to load |
+| path    | String | Path of the resource to load |
 | options | Table  | Additional options |
 
 **Options**
@@ -96,13 +96,13 @@ func main() {
 
 [http.response](#httpresponse) or (nil, error message)
 
-### http.head(url [, options])
+### http.head(path [, options])
 
 **Attributes**
 
 | Name    | Type   | Description |
 | ------- | ------ | ----------- |
-| url     | String | URL of the resource to load |
+| path    | String | Path of the resource to load |
 | options | Table  | Additional options |
 
 **Options**
@@ -124,7 +124,7 @@ func main() {
 
 | Name    | Type   | Description |
 | ------- | ------ | ----------- |
-| url     | String | URL of the resource to load |
+| path    | String | Path of the resource to load |
 | options | Table  | Additional options |
 
 **Options**
@@ -148,7 +148,7 @@ func main() {
 
 | Name    | Type   | Description |
 | ------- | ------ | ----------- |
-| url     | String | URL of the resource to load |
+| path    | String | Path of the resource to load |
 | options | Table  | Additional options |
 
 **Options**
@@ -166,13 +166,13 @@ func main() {
 
 [http.response](#httpresponse) or (nil, error message)
 
-### http.put(url [, options])
+### http.put(path [, options])
 
 **Attributes**
 
 | Name    | Type   | Description |
 | ------- | ------ | ----------- |
-| url     | String | URL of the resource to load |
+| path    | String | Path of the resource to load |
 | options | Table  | Additional options |
 
 **Options**
