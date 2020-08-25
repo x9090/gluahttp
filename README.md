@@ -118,7 +118,7 @@ func main() {
 
 [http.response](#httpresponse) or (nil, error message)
 
-### http.patch(url [, options])
+### http.patch(path [, options])
 
 **Attributes**
 
@@ -142,7 +142,7 @@ func main() {
 
 [http.response](#httpresponse) or (nil, error message)
 
-### http.post(url [, options])
+### http.post(path [, options])
 
 **Attributes**
 
@@ -190,14 +190,14 @@ func main() {
 
 [http.response](#httpresponse) or (nil, error message)
 
-### http.request(method, url [, options])
+### http.request(method, path [, options])
 
 **Attributes**
 
 | Name    | Type   | Description |
 | ------- | ------ | ----------- |
 | method  | String | The HTTP request method |
-| url     | String | URL of the resource to load |
+| path    | String | P of the resource to load |
 | options | Table  | Additional options |
 
 **Options**
