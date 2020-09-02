@@ -6,11 +6,13 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
-	"github.com/yuin/gopher-lua"
+	"fptvulnscan/helper"
 	"io/ioutil"
 	"net/http"
 	"strings"
 	"time"
+
+	lua "github.com/yuin/gopher-lua"
 )
 
 type httpModule struct {
@@ -19,11 +21,13 @@ type httpModule struct {
 
 type empty struct{}
 
-// Global variables for the target passed by VulnScan engine
+// Global variables for the target passed by FSE
+var HttpLogger *helper.Logger
 var HostName string
 var PortNum int
 
 func NewHttpModule(client *http.Client, hostName string, portNum int) *httpModule {
+	HttpLogger = helper.InitLogger("", false)
 	HostName = hostName
 	PortNum = portNum
 	return NewHttpModuleWithDo(client.Do)
@@ -283,7 +287,7 @@ func buildTargetBaseURL(hostName string, portNum int) string {
 			url = fmt.Sprintf("https://%s", url)
 
 		default:
-			fmt.Println("Unrecognized port, using default HTTPS with specified port number\n")
+			HttpLogger.Info("Unrecognized port, using default HTTPS with specified port number")
 			url = fmt.Sprintf("https://%s:%d", url, portNum)
 		}
 	} else if portNum != 80 && portNum != 443 {
@@ -292,7 +296,6 @@ func buildTargetBaseURL(hostName string, portNum int) string {
 	return url
 }
 
-//func (h *httpModule) doRequestAndPush(L *lua.LState, method string, url string, options *lua.LTable) int {
 func (h *httpModule) doRequestAndPush(L *lua.LState, method string, path string, options *lua.LTable) int {
 	baseURL := buildTargetBaseURL(HostName, PortNum)
 	if !strings.HasPrefix(path, "/") {
